@@ -17,6 +17,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -29,6 +33,7 @@ import com.ersinberkealemdaroglu.deeplinkmanager.R
 import com.ersinberkealemdaroglu.deeplinkmanager.model.DeeplinkModel
 import com.ersinberkealemdaroglu.deeplinkmanager.ui.component.CustomToolbar
 import com.ersinberkealemdaroglu.deeplinkmanager.ui.component.PrimaryButton
+import com.ersinberkealemdaroglu.deeplinkmanager.ui.component.TextFiledGetirir
 import com.ersinberkealemdaroglu.deeplinkmanager.ui.theme.DeeplinkManagerTheme
 import com.ersinberkealemdaroglu.deeplinkmanager.ui.theme.HorizontalDividerColor
 import com.ersinberkealemdaroglu.deeplinkmanager.ui.theme.PrimaryBackground
@@ -44,9 +49,12 @@ fun HomeScreen(
     onItemClicked: (deeplink: String) -> Unit = {},
     onInfoClicked: (deeplinkModel: DeeplinkModel) -> Unit = {},
     onCopyText: (String) -> Unit,
+    onSearchText: (String) -> Unit = {},
 ) {
+    var deeplinkText by remember { mutableStateOf("") }
+
     Column(modifier = modifier) {
-        if (uiState.deeplinkList.isEmpty()) {
+        if (uiState.uiModelState == HomeScreenUIModelState.NO_DATA) {
             NoData(
                 modifier = Modifier
                     .fillMaxSize()
@@ -61,6 +69,79 @@ fun HomeScreen(
             HorizontalDivider(
                 thickness = 1.5.dp, color = HorizontalDividerColor
             )
+
+            Spacer(Modifier.height(16.dp))
+
+            TextFiledGetirir(modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp), text = deeplinkText, trailingIcon = {
+                if (deeplinkText.isNotEmpty()) {
+                    Image(
+                        modifier = Modifier
+                            .width(16.dp)
+                            .height(16.dp)
+                            .noRippleClickable {
+                                deeplinkText = ""
+                            }, painter = painterResource(R.drawable.ic_close_icon), contentDescription = null
+                    )
+                }
+            }, placeholder = "Enter a title for the deeplink", onValueChange = { text ->
+                deeplinkText = text
+            })
+
+            Spacer(Modifier.height(16.dp))
+
+            PrimaryButton(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                text = "Open Deeplink",
+                enabled = deeplinkText.isNotEmpty(),
+                onClick = {
+                    onItemClicked.invoke(deeplinkText)
+                })
+
+            Spacer(Modifier.height(16.dp))
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.5.dp, color = HorizontalDividerColor
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            Text(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                text = "Saved Deeplinks",
+                style = MaterialTheme.typography.bodyLarge,
+                color = PrimaryTextColor,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            TextFiledGetirir(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                text = uiState.searchText,
+                trailingIcon = {
+                    if (uiState.searchText.isNotEmpty()) {
+                        Image(
+                            modifier = Modifier
+                                .width(16.dp)
+                                .height(16.dp)
+                                .noRippleClickable {
+                                    onSearchText.invoke("")
+                                }, painter = painterResource(R.drawable.ic_close_icon), contentDescription = null
+                        )
+                    }
+                },
+                placeholder = "Search saved deeplinks",
+                onValueChange = { text ->
+                    onSearchText.invoke(text)
+                })
+
+            Spacer(Modifier.height(8.dp))
 
             DeeplinkListUi(modifier = Modifier.fillMaxSize(), uiState = uiState, onItemClicked = { deeplink ->
                 onItemClicked.invoke(deeplink)

@@ -61,6 +61,9 @@ class HomeScreenRegisterer : NavRegisterer {
                             id = deeplinkModel.id, title = deeplinkModel.title, url = deeplinkModel.url
                         )
                     )
+                },
+                onSearchText = { searchText ->
+                    viewModel.onSearchTextChange(searchText)
                 })
         }
     }

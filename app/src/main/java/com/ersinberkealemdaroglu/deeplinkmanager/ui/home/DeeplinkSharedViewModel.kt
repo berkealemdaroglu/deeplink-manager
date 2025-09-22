@@ -23,48 +23,69 @@ class DeeplinkSharedViewModel(
         "deeplink_prefs", Context.MODE_PRIVATE
     )
 
+    private var originalDeeplinkList: List<DeeplinkModel>? = null
+
     init {
         loadData()
     }
 
     private fun loadData() = viewModelScope.launch {
         val data = sharedPreferences.getString("deeplink", null)?.toDataModel()
+        originalDeeplinkList = data ?: emptyList()
         _homeUiState.update { state ->
-            state.copy(deeplinkList = data ?: emptyList())
+            state.copy(
+                deeplinkList = data ?: emptyList(),
+                uiModelState = if (data.isNullOrEmpty()) HomeScreenUIModelState.NO_DATA else HomeScreenUIModelState.HAS_DATA
+            )
         }
     }
 
     fun saveDeeplinkData(deeplinkModel: DeeplinkModel) = viewModelScope.launch {
         val currentList = _homeUiState.value.deeplinkList.toMutableList()
         currentList.add(deeplinkModel)
-        _homeUiState.update { state ->
-            state.copy(deeplinkList = currentList)
-        }
-        saveSharedPreferences(currentList.toStringModel())
+        updateAllDeeplinkData(currentList)
     }
 
     fun updateDeeplinkData(deeplinkModel: DeeplinkModel) = viewModelScope.launch {
         val currentList = _homeUiState.value.deeplinkList
         val updatedList = currentList.map { if (it.id == deeplinkModel.id) deeplinkModel else it }
-        _homeUiState.update { state ->
-            state.copy(deeplinkList = updatedList)
-        }
-
-        saveSharedPreferences(updatedList.toMutableList().toStringModel())
+        updateAllDeeplinkData(updatedList)
     }
 
     fun removeDeeplinkData(deeplinkModel: DeeplinkModel) = viewModelScope.launch {
         val currentList = _homeUiState.value.deeplinkList.toMutableList()
         currentList.remove(deeplinkModel)
-        _homeUiState.update { state ->
-            state.copy(deeplinkList = currentList)
-        }
-
-        saveSharedPreferences(currentList.toStringModel())
+        updateAllDeeplinkData(currentList)
     }
 
-    private fun saveSharedPreferences(data: String) = viewModelScope.launch {
-        sharedPreferences.edit { putString("deeplink", data) }
+    fun updateAllDeeplinkData(deeplinkList: List<DeeplinkModel>) = viewModelScope.launch {
+        _homeUiState.update { state ->
+            state.copy(
+                deeplinkList = deeplinkList,
+                uiModelState = if (deeplinkList.isEmpty()) HomeScreenUIModelState.NO_DATA else HomeScreenUIModelState.HAS_DATA
+            )
+        }
+
+        saveSharedPreferences(deeplinkList.toMutableList())
+    }
+
+    fun onSearchTextChange(newText: String) = viewModelScope.launch {
+        val filteredList = if (newText.isEmpty()) {
+            originalDeeplinkList
+        } else {
+            originalDeeplinkList?.filter {
+                it.title.contains(newText.trimEnd(), ignoreCase = true) || it.url.contains(newText.trimEnd(), ignoreCase = true)
+            }
+        }
+
+        _homeUiState.update { state ->
+            state.copy(searchText = newText, deeplinkList = filteredList ?: emptyList())
+        }
+    }
+
+    private fun saveSharedPreferences(data: List<DeeplinkModel>) = viewModelScope.launch {
+        originalDeeplinkList = data
+        sharedPreferences.edit { putString("deeplink", data.toMutableList().toStringModel()) }
     }
 
     private fun <T> MutableList<T>.toStringModel(): String {
