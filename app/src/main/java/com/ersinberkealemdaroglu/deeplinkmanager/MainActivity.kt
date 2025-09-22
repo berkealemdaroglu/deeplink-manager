@@ -11,8 +11,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
@@ -29,14 +27,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DeeplinkIdManager.init(this)
-            StatusBarWithAttr(
-                statusBarColor = PrimaryBackground, isStatusBarIconsLight = true
-            )
+            StatusBarWithAttr()
             val navController = rememberNavController()
             val navProvider = NavProviderFactory.createNavProvider()
 
             DeeplinkManagerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(modifier = Modifier.fillMaxSize(), containerColor = PrimaryBackground) { innerPadding ->
                     NavGraph(
                         modifier = Modifier.padding(innerPadding),
                         navController = navController,
@@ -50,16 +46,12 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun StatusBarWithAttr(
-    statusBarColor: Color,
-    isStatusBarIconsLight: Boolean,
-) {
+fun StatusBarWithAttr() {
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = statusBarColor.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isStatusBarIconsLight
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
 }
